@@ -1,25 +1,29 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 
 
 //if the view gameloop calls repaint for 60 fps, then
-//most repaints here are not necessary
+//most repaints here are not necessary, such as in setScale
 
-public class CameraTest extends JPanel  implements MouseListener, MouseMotionListener {
+public class CameraTest extends JPanel implements MouseListener, MouseMotionListener, KeyListener {
 
     // Panel size
-    private int SCALE = 2;
+    private int scale = 8;
     private static final int PANEL_SIZE_X = 1280;
     private static final int PANEL_SIZE_Y = 720;
-    private int drawoffsetx;
-    private int drawoffsety;
-    private int camerax;
-    private int cameray;
-    private int cameraoffsetx;
-    private int cameraoffsety;
+
+    //position of cam as if in game
+    private int cameraX;
+    private int cameraY;
+
+    //offset for drawing objects in JPanel
+    private int drawOffsetX;
+    private int drawOffsetY;
+
+    //amount dragged when click and drag to move cam (unlocked cam)
+    private int cameraDragX;
+    private int cameraDragY;
 
     private boolean dragging = false;
     private boolean locked = false;
@@ -37,19 +41,46 @@ public class CameraTest extends JPanel  implements MouseListener, MouseMotionLis
 
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
+        this.addKeyListener(this);
+        this.setFocusable(true);
 
-        camerax = map.player.x;
-        cameray = map.player.y;
-        drawoffsetx = calculateXOffset();
-        drawoffsety = calculateYOffset();
+        cameraX = map.player.x;
+        cameraY = map.player.y;
+        drawOffsetX = calculateXOffset();
+        drawOffsetY = calculateYOffset();
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
-        System.out.println("Mouse pressed");
-        dragging = true;
-        cameraoffsetx = e.getX() - camerax;
-        cameraoffsety = e.getY() - cameray;
+        //Mac cannot detect control + click
+        //ChatGPT:  On macOS, Control + Click is interpreted by the OS as a right-click after processing the event.
+        //          But Java sees it as a left-click with the Control key held down
+        //the solution is to use isControlDown() with left click
+        if (SwingUtilities.isRightMouseButton(e) || (SwingUtilities.isLeftMouseButton(e) && e.isControlDown())) {
+
+            //debug stuff
+            System.out.println("Right Mouse pressed");
+            int x = e.getX();
+            int y = e.getY();
+            System.out.println("Clicked on window at: (" + x + ", " + y + ")");
+
+            //the real stuff, not sure clamping is necessary ??
+            //also, clamps to 255 not 256 ermmm
+            int clickedX = (e.getX() - drawOffsetX) / scale;
+            clickedX = clickedX < 0? 0 : (clickedX >= map.MAP_SIZE? map.MAP_SIZE - 1 : clickedX);
+            int clickedY = (e.getY() - drawOffsetY) / scale;
+            clickedY = clickedY < 0? 0 : (clickedY >= map.MAP_SIZE? map.MAP_SIZE - 1 : clickedY);
+            System.out.println("Which in game is: (" + clickedX + ", " + clickedY + ")");
+        }
+        else if (SwingUtilities.isLeftMouseButton(e)) {
+            System.out.println("Left Mouse pressed");
+            dragging = true;
+            cameraDragX = e.getX() - cameraX;
+            cameraDragY = e.getY() - cameraY;
+        }
+        else {
+            System.out.println("you used middle click probably");
+        }
     }
 
     @Override
@@ -62,13 +93,32 @@ public class CameraTest extends JPanel  implements MouseListener, MouseMotionLis
     public void mouseDragged(MouseEvent e) {
         System.out.println("Mouse dragged");
         if (dragging && !locked) {
-            camerax = e.getX() - cameraoffsetx;
-            camerax = camerax < 0? 0 : (camerax > map.MAP_SIZE? map.MAP_SIZE : camerax);
-            cameray = e.getY() - cameraoffsety;
-            cameray = cameray < 0? 0 : (cameray > map.MAP_SIZE? map.MAP_SIZE : cameray);
+            //does not clamp to MAP_SIZE - 1 because Model doesn't know it exists
+            cameraX = e.getX() - cameraDragX;
+            cameraX = cameraX < 0? 0 : (cameraX > map.MAP_SIZE? map.MAP_SIZE : cameraX);
+            cameraY = e.getY() - cameraDragY;
+            cameraY = cameraY < 0? 0 : (cameraY > map.MAP_SIZE? map.MAP_SIZE : cameraY);
             repaint();
         }
     }
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        int code = e.getKeyCode();
+        System.out.println("a key was pressed");
+        if (code == KeyEvent.VK_W) {
+            Point mouseLocation = MouseInfo.getPointerInfo().getLocation();
+            SwingUtilities.convertPointFromScreen(mouseLocation, this);
+            System.out.println("Mouse in panel: " + mouseLocation);
+            System.out.println("which in game is: " + (mouseLocation.getX() - drawOffsetX) / scale + ", " + (mouseLocation.getY() - drawOffsetY) / scale);
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {}
 
     // Unused event methods
     @Override public void mouseMoved(MouseEvent e) {}
@@ -81,23 +131,25 @@ public class CameraTest extends JPanel  implements MouseListener, MouseMotionLis
 
         MapPartitionTest.Champion c = map.player;
         if (locked) {
-            camerax = c.x;
-            cameray = c.y;
+            cameraX = c.x;
+            cameraY = c.y;
         }
-        //bake SCALE into draw offsets
-        drawoffsetx = calculateXOffset();
-        drawoffsety = calculateYOffset();
+        //bake scale into draw offsets
+        //scale is not baked into position (x,y) or size
+        drawOffsetX = calculateXOffset();
+        drawOffsetY = calculateYOffset();
 
-        System.out.println("Camera is at: " + camerax + ", " + cameray);
+        //System.out.println("Camera is at: " + camerax + ", " + cameray);
+
+        //I don't know what this does
         super.paintComponent(g);
 
-        // Draw the square (positioned at (20,20) for padding)
-        g.drawRect(drawoffsetx, drawoffsety, map.MAP_SIZE * SCALE, map.MAP_SIZE * SCALE);
-
+        //Draw: map, minions, champion
+        g.drawRect(drawOffsetX, drawOffsetY, map.MAP_SIZE * scale, map.MAP_SIZE * scale);
         for (MapPartitionTest.Minion m : map.minions) {
-            drawMinion(g, (m.x * SCALE) + drawoffsetx, (m.y * SCALE) + drawoffsety, m.size * SCALE);
+            drawMinion(g, (m.x * scale) + drawOffsetX, (m.y * scale) + drawOffsetY, m.size * scale);
         }
-        drawChampion(g, (c.x * SCALE) + drawoffsetx, (c.y * SCALE) + drawoffsety, map.player.size * SCALE);
+        drawChampion(g, (c.x * scale) + drawOffsetX, (c.y * scale) + drawOffsetY, map.player.size * scale);
 
     }
 
@@ -115,21 +167,24 @@ public class CameraTest extends JPanel  implements MouseListener, MouseMotionLis
         g.drawOval(topLeftX, topLeftY, diameter, diameter);
     }
 
+    //calculate drawoffsetx
     public int calculateXOffset() {
-        return (PANEL_SIZE_X / 2) - (camerax * SCALE);
+        return (PANEL_SIZE_X / 2) - (cameraX * scale);
     }
 
+    //calculate drawoffsety
     public int calculateYOffset() {
-        return (PANEL_SIZE_Y / 2) - (cameray * SCALE);
+        return (PANEL_SIZE_Y / 2) - (cameraY * scale);
     }
 
-    public void setSCALE(int SCALE) {
-        this.SCALE = SCALE;
+    public void setScale(int scale) {
+        this.scale = scale;
         repaint();
     }
 
     public void update() {
         repaint();
     }
+
 
 }

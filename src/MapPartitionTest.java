@@ -5,6 +5,9 @@ import java.util.concurrent.TimeUnit;
 
 //size is radius
 
+//TODO: check if something clamps to MAP_SIZE, it clamps to MAP_SIZE - 1
+// so when /MAP_PARTITIONS, doesn't give out of bounds error
+
 public class MapPartitionTest {
 
     final int MAP_SIZE = 256;
@@ -20,7 +23,7 @@ public class MapPartitionTest {
                 entities[i][j] = new HashSet<DummyEntity>();
             }
         }
-        player = new Champion(this, 40, MAP_SIZE-40);
+        player = new Champion(this, 40, MAP_SIZE - 40);
     }
 
     //y is row, x is col
