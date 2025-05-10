@@ -12,6 +12,7 @@ public class MapPartitionTest {
     final int COLLISION_BUFFER = 20; //size of largest minion radius
     Set<DummyEntity>[][] entities = new HashSet[MAP_PARTITIONS][MAP_PARTITIONS];
     ArrayList<Minion> minions = new ArrayList<Minion>();
+    Champion player;
 
     MapPartitionTest() {
         for (int i = 0; i < MAP_PARTITIONS; i++) {
@@ -19,6 +20,7 @@ public class MapPartitionTest {
                 entities[i][j] = new HashSet<DummyEntity>();
             }
         }
+        player = new Champion(this, 40, MAP_SIZE-40);
     }
 
     //y is row, x is col
@@ -71,7 +73,7 @@ public class MapPartitionTest {
         //check in this range of cells
         for (int i = xMinCell; i <= xMaxCell; i++) {
             for (int j = yMinCell; j <= yMaxCell; j++) {
-                for (DummyEntity e : entities[j][i]) {
+                for (DummyEntity e : entities[j][i]) { //j is y, i is x
                     if (dist(a, e) < a.size + e.size && a != e) {
                         hit.add(e);
                     }
@@ -103,7 +105,7 @@ public class MapPartitionTest {
         int health;
 
         public Minion(MapPartitionTest map, int x, int y) {
-            super(map, x, y, 20);
+            super(map, x, y, 5);
             health = 100;
         }
 
@@ -111,42 +113,46 @@ public class MapPartitionTest {
             health -= dmg;
             if (health < 0) map.removeMinion(this);
         }
-//        public String toString() {
-//            return ("[x: " + x + ", y: " + y + ", hp: " + health + "]");
-//        }
+    }
 
+    public static class Champion extends Minion {
+        public Champion(MapPartitionTest map, int x, int y) {
+            super(map, x, y);
+            size = 10;
+        }
     }
 
     public static void main(String[] args) throws InterruptedException {
         MapPartitionTest map = new MapPartitionTest();
-        CircleDrawer view = new CircleDrawer(map);
-        int speed = 5;
+        CameraTest view = new CameraTest(map);
 
-        //Populate with minions
-        TimeUnit.SECONDS.sleep(1);
-        for (int i = 56; i < 200; i += 5) {
-            for (int j = 56; j < 200; j += 5) {
-                map.spawnMinion(i, j);
-            }
-        }
-        System.out.println("total minions: " + map.minions.size());
-        view.update();
+        map.spawnMinion(220, 50);
 
         TimeUnit.SECONDS.sleep(1);
 
-        //Remove the minions a certain minion collides with
+        //Move the player across the screen, redrawing with CameraTest centered on player
         int i = 0;
-        Minion m = map.spawnMinion(64, 0);
-        while (i < map.minions.size()) {
+        while (i < 50) {
             view.update();
-            m.x += 2;
-            m.y += 3;
+            map.player.x += 3;
+            map.player.y -= 1;
             TimeUnit.MILLISECONDS.sleep(50);
-            ArrayList<DummyEntity> hit = map.collisions(m);
-            System.out.println("hit minions: " + hit.size());
-            for (DummyEntity e : hit) {
-                map.removeMinion((Minion) e);
-            }
+            i++;
+        }
+//        i = 8;
+//        while (i > 0) {
+//            view.setSCALE(i);
+//            TimeUnit.MILLISECONDS.sleep(1000);
+//            i--;
+//        }
+        i = 0;
+        while (i < 50) {
+            view.update();
+            map.player.x -= 3;
+            map.player.y -= 1;
+            TimeUnit.MILLISECONDS.sleep(20);
+
+            i++;
         }
 
     }

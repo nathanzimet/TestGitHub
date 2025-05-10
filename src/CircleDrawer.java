@@ -1,4 +1,9 @@
-//this is from chatgpt lmfao
+//Started with ChatGPT
+
+//Prompt:
+//Write a java program that:
+//  draws a 256x256 square in a JPanel
+//  has a method to draw a circle in the square based on the coordinates of its center and its radius
 
 import javax.swing.*;
 import java.awt.*;
