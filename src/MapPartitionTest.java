@@ -139,7 +139,7 @@ public class MapPartitionTest {
             view.update();
             map.player.x += 3;
             map.player.y -= 1;
-            TimeUnit.MILLISECONDS.sleep(50);
+            TimeUnit.MILLISECONDS.sleep(20);
             i++;
         }
 //        i = 8;

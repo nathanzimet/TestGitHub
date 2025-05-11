@@ -9,7 +9,7 @@ import java.awt.event.*;
 public class CameraTest extends JPanel implements MouseListener, MouseMotionListener, KeyListener {
 
     // Panel size
-    private int scale = 8;
+    private int scale = 2;
     private static final int PANEL_SIZE_X = 1280;
     private static final int PANEL_SIZE_Y = 720;
 
