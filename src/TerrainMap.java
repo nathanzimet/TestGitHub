@@ -2,6 +2,7 @@ import java.awt.*;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 //no functions have any error checking.
 //the file must exactly match expected input
@@ -12,11 +13,11 @@ public class TerrainMap {
 
     public String terrainFile;
     public static final int MAP_SIZE = 256;
-    public static final int TERRAIN_MAP_SIZE = 8;
+    public static final int TERRAIN_MAP_SIZE = 64;
     public static int[][] terrainMap = new int[TERRAIN_MAP_SIZE][TERRAIN_MAP_SIZE];
 
-    public ArrayList<Line> lines = new ArrayList<>();
-    public ArrayList<Point> points = new ArrayList<>();
+    public static ArrayList<Line> lines = new ArrayList<>();
+    public static ArrayList<Point> points = new ArrayList<>();
 
     public TerrainMap(String terrainFile) {
         this.terrainFile = terrainFile;
@@ -71,7 +72,7 @@ public class TerrainMap {
         public Line(Point p1, Point p2) {
             this.p1 = p1;
             this.p2 = p2;
-            tstep = 1.0 / (dist(p1, p2) * TERRAIN_MAP_SIZE / MAP_SIZE);
+            tstep = (1.0 / (dist(p1, p2) * TERRAIN_MAP_SIZE / MAP_SIZE));
         }
 
         public Point generateNextPoint() {
@@ -82,7 +83,8 @@ public class TerrainMap {
             return p;
         }
 
-        public Point getPointAtT(double tPrime) {
+        public Point getOppositePoint() {
+            double tPrime = t * -1;
             return new Point((p1.x + ((p2.x - p1.x) * tPrime)), (p1.y + ((p2.y - p1.y) * tPrime)));
         }
 
@@ -116,19 +118,9 @@ public class TerrainMap {
             return new Line(P, Q);
         }
 
-        public Point getNearestGroundPoint() {
-            this.reset();
-            Point T = this.generateNextPoint();
-            while (T.inWall()) {
-                T = this.generateNextPoint();
-            }
-            return T;
-        }
-
-        public ArrayList<Point> getPath(Point A, Point B) {
-
-
-            return null;
+        public ArrayList<Point> getPath() {
+            Path path = new Path(p1, p2);
+            return path.path;
         }
     }
 
@@ -142,63 +134,102 @@ public class TerrainMap {
         ArrayList<Point> path = new ArrayList<>();
         Point A;
         Point B;
+        int rounding = MAP_SIZE / TERRAIN_MAP_SIZE;
 
         public Path(Point A, Point B) {
             this.A = A;
             this.B = B;
+            makePath();
         }
 
-        public void makePath(Point P, Point Q) {
-            makePath(P, Q, 0);
+        public void makePath() {
+            path.add(A);
+            makePath(A, B, 0, 0);
         }
 
-        public void makePath(Point P, Point Q, int direction) {
+        //direction:
+        // 1 = left, 0 = none, -1 = right
+        public void makePath(Point P, Point Q, int direction, int attempts) {
 
-            path.add(P);
+            if (attempts == 10) return;
+
             Line PQ = new Line(P, Q);
             Point T = PQ.generateNextPoint();
-            while (!T.inWall()) T = PQ.generateNextPoint();
-            if (PQ.drawn) {
-                path.add(Q);
-                return;
+
+            while (!T.inWall()) {
+                T = PQ.generateNextPoint();
+                if (PQ.drawn) {
+                    if (Math.abs(Q.x - path.get(path.size()-1).x) < 4
+                        || Math.abs(Q.y - path.get(path.size()-1).y) < 4)
+                        path.set(path.size() - 1, Q);
+                    else path.add(Q);
+                    return;
+                }
             }
+
             Point p = T;
             while (T.inWall()) T = PQ.generateNextPoint(); //B must not be in wall
             Point q = T;
 
             Line pqBisectorLeft = Line.makeLeftBisector(p, q);
-            Line pqBisectorRight = Line.makeRightBisector(p, q);
-
             Point t = pqBisectorLeft.generateNextPoint();
 
+            if (direction == 0) {
+                direction = 1;
+                Point tOpposite;
+                while (t.inWall()) {
+                    tOpposite = pqBisectorLeft.getOppositePoint();
+                    if (!(tOpposite.inWall())) {
+                        t = tOpposite;
+                        direction = -1;
+                        break;
+                    }
+                    t = pqBisectorLeft.generateNextPoint();
+                }
 
+            } else if (direction == 1) {
+                while (t.inWall()) {
+                    t = pqBisectorLeft.generateNextPoint();
+                }
+            } else { //direction == -1
+                Line pqBisectorRight = Line.makeRightBisector(p, q);
+                t = pqBisectorRight.generateNextPoint();
+                while (t.inWall()) {
+                    t = pqBisectorRight.generateNextPoint();
+                }
+            }
+
+            t.x = Math.floor(t.x);
+            t.y = Math.floor(t.y);
+
+            makePath(P, t, direction, attempts + 1);
+            makePath(t, Q, direction, attempts + 1);
 
         }
 
     }
 
-    public static void main(String args[]) {
-        TerrainMap map = new TerrainMap("src/terrainsmall.txt");
+    public static void main(String args[]) throws InterruptedException {
+        TerrainMap map = new TerrainMap("src/terrain2.txt");
         PathfindingDrawer view = new PathfindingDrawer(map);
 
-        Point A = new Point(50, 230);
-        Point B = new Point(120, 30);
+        Point A = new Point(128, 128);
+        Point B = new Point(128, 160);
 
         Line l1 = new Line(A, B);
         map.lines.add(l1);
-        map.lines.add(Line.makeLeftBisector(A, B));
-
-        for (Line l : map.lines) {
-            int i = 0;
-            while (l.drawn == false) {
-                Point p = l.generateNextPoint();
-                if (!p.inWall()) map.points.add(p);
-                i++;
-            }
-            System.out.println("drew " + i + " points");
-        }
 
         view.update();
+
+        ArrayList<Point> path = l1.getPath();
+
+        System.out.println(path.toString());
+
+        for (int i = 0; i < path.size() - 1; i++) {
+            TimeUnit.MILLISECONDS.sleep(500);
+            map.lines.add(new Line(path.get(i), path.get(i + 1)));
+            view.update();
+        }
 
     }
 }
