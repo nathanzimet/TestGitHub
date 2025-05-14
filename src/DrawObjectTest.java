@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 public class DrawObjectTest {
     public static void main(String[] args) {
@@ -15,7 +16,7 @@ public class DrawObjectTest {
             frame.add(panel, BorderLayout.CENTER);
 
             // Create control panel for user input
-            JPanel controlPanel = new JPanel(new GridLayout(2, 4, 5, 5));
+            JPanel controlPanel = new JPanel(new GridLayout(2, 5, 5, 5));
 
             JComboBox<String> shapeCombo = new JComboBox<>(new String[]{
                     "Yellow Circle", "Blue Square",
@@ -25,6 +26,9 @@ public class DrawObjectTest {
             JTextField xField = new JTextField("100");
             JTextField yField = new JTextField("100");
             JButton addButton = new JButton("Add Shape");
+            JButton removeButton = new JButton("Remove Shape");
+            final int[] currentID = {0};
+            ArrayList<Message<DrawnObject>> objectList = new ArrayList<>();
 
             controlPanel.add(new JLabel("Shape Type:"));
             controlPanel.add(shapeCombo);
@@ -32,8 +36,9 @@ public class DrawObjectTest {
             controlPanel.add(xField);
             controlPanel.add(new JLabel("Y Coordinate:"));
             controlPanel.add(yField);
-            controlPanel.add(new JLabel(""));
             controlPanel.add(addButton);
+            controlPanel.add(removeButton);
+
 
             frame.add(controlPanel, BorderLayout.SOUTH);
 
@@ -63,13 +68,27 @@ public class DrawObjectTest {
                         }
 
                         if (obj != null) {
-                            panel.addDrawObject(new Message<>(obj));
+                            obj.setID(currentID[0]);
+                            Message<DrawnObject> drawObject = new Message<>(obj);
+                            objectList.add(drawObject);
+                            currentID[0]++;
+                            panel.addDrawObject(drawObject);
                         }
+
                     } catch (NumberFormatException ex) {
                         JOptionPane.showMessageDialog(frame,
                                 "Please enter valid coordinates (numbers only)",
                                 "Input Error", JOptionPane.ERROR_MESSAGE);
                     }
+                }
+            });
+
+            removeButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Message<DrawnObject> toRemove = objectList.get(objectList.size() - 1);
+                    panel.removeDrawObject(toRemove);
+                    objectList.remove(objectList.size() - 1);
                 }
             });
 
