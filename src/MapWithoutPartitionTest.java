@@ -4,6 +4,8 @@ import java.util.Set;
 
 import static java.lang.Math.sqrt;
 
+//Nathan Zimet
+
 //size is radius
 
 public class MapWithoutPartitionTest {

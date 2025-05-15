@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
+//Nathan Zimet
 //no functions have any error checking.
 //the file must exactly match expected input
 
@@ -62,6 +63,9 @@ public class TerrainMap {
         }
     }
 
+
+    //Defines start and end points with parametric linear equation
+    //tstep is 1 terrain unit
     public static class Line {
         Point p1;
         Point p2;
@@ -135,6 +139,8 @@ public class TerrainMap {
         Point A;
         Point B;
         int rounding = MAP_SIZE / TERRAIN_MAP_SIZE;
+        Line l;
+        boolean hasLine = false;
 
         public Path(Point A, Point B) {
             this.A = A;
@@ -151,7 +157,7 @@ public class TerrainMap {
         // 1 = left, 0 = none, -1 = right
         public void makePath(Point P, Point Q, int direction, int attempts) {
 
-            if (attempts == 10) return;
+            if (attempts == 20) return;
 
             Line PQ = new Line(P, Q);
             Point T = PQ.generateNextPoint();
@@ -159,8 +165,8 @@ public class TerrainMap {
             while (!T.inWall()) {
                 T = PQ.generateNextPoint();
                 if (PQ.drawn) {
-                    if (Math.abs(Q.x - path.get(path.size()-1).x) < 4
-                        || Math.abs(Q.y - path.get(path.size()-1).y) < 4)
+                    if (Math.abs(Q.x - path.get(path.size() - 1).x) < 2
+                            || Math.abs(Q.y - path.get(path.size() - 1).y) < 2)
                         path.set(path.size() - 1, Q);
                     else path.add(Q);
                     return;
@@ -174,6 +180,7 @@ public class TerrainMap {
             Line pqBisectorLeft = Line.makeLeftBisector(p, q);
             Point t = pqBisectorLeft.generateNextPoint();
 
+            //initially, no direction
             if (direction == 0) {
                 direction = 1;
                 Point tOpposite;
@@ -187,10 +194,13 @@ public class TerrainMap {
                     t = pqBisectorLeft.generateNextPoint();
                 }
 
+                //going left
             } else if (direction == 1) {
                 while (t.inWall()) {
                     t = pqBisectorLeft.generateNextPoint();
                 }
+
+                //going right
             } else { //direction == -1
                 Line pqBisectorRight = Line.makeRightBisector(p, q);
                 t = pqBisectorRight.generateNextPoint();
@@ -207,28 +217,50 @@ public class TerrainMap {
 
         }
 
+        public Point generateNextPoint() {
+            if (path.size() == 1) {
+                return B;
+            }
+            if (!hasLine) {
+                l = new Line(path.get(0), path.get(1));
+                l.tstep /= 2;
+                hasLine = true;
+            }
+
+            if (l.t < 1) {
+                return l.generateNextPoint();
+            } else {
+                path.remove(0);
+                l.reset();
+                hasLine = false;
+            }
+
+            return this.generateNextPoint();
+        }
     }
 
     public static void main(String args[]) throws InterruptedException {
         TerrainMap map = new TerrainMap("src/terrain2.txt");
         PathfindingDrawer view = new PathfindingDrawer(map);
 
-        Point A = new Point(128, 128);
-        Point B = new Point(128, 160);
+        Point A = new Point(120, 200);
+        Point B = new Point(150, 20);
 
         Line l1 = new Line(A, B);
         map.lines.add(l1);
 
         view.update();
 
-        ArrayList<Point> path = l1.getPath();
+        Path p = new Path(A, B);
 
-        System.out.println(path.toString());
+        System.out.println(p.path.toString());
 
-        for (int i = 0; i < path.size() - 1; i++) {
-            TimeUnit.MILLISECONDS.sleep(500);
-            map.lines.add(new Line(path.get(i), path.get(i + 1)));
+        points.add(A);
+
+        for (int i = 0; i < 5000; i++) {
+            points.set(0, p.generateNextPoint());
             view.update();
+            TimeUnit.MILLISECONDS.sleep(17);
         }
 
     }

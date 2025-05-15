@@ -3,7 +3,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+//Nathan Zimet
 //size is radius
+
+//see timing tests for other driver code samples
+
+//changed this in the real game to take an arbitrary bonus radius
 
 //TODO: check if something clamps to MAP_SIZE, it clamps to MAP_SIZE - 1
 // so when /MAP_PARTITIONS, doesn't give out of bounds error

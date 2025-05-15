@@ -1,5 +1,8 @@
 public class IntegerDivisionByMultiplicationTest {
 
+
+    //Nathan Zimet
+    //ok sometmies you gotta just test teh small stuff lol
     public static void main(String args[]) {
         System.out.println("Hello world");
 

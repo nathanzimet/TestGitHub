@@ -2,9 +2,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+//Nathan Zimet
 
 //if the view gameloop calls repaint for 60 fps, then
 //most repaints here are not necessary, such as in setScale
+//those repaints were used during testing check for camera control inputs
+
+//executed by driver code in mappartitiontest
 
 public class CameraTest extends JPanel implements MouseListener, MouseMotionListener, KeyListener {
 

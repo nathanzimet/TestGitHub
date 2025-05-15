@@ -1,6 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
 
+//Nathan Zimet
+
+//Drawer class for terrainmap to test pathing
+
 public class PathfindingDrawer extends JPanel {
 
     // Panel size

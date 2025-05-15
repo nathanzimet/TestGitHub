@@ -1,8 +1,8 @@
 import java.awt.*;
 
 abstract class DrawnObject {
-    protected int x;
-    protected int y;
+    int x;
+    int y;
 
     public DrawnObject(int x, int y) {
         this.x = x;
